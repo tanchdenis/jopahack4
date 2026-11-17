@@ -1,0 +1,112 @@
+-- Runs against the real library with the limited mock above, not a copy of its logic.
+local checks=0
+local function check(condition,message) checks+=1 assert(condition,message) end
+local function near(a,b) return math.abs(a-b)<0.000001 end
+local function named(parent,name)
+    for _,child in ipairs(parent:GetDescendants()) do if child.Name==name then return child end end
+    error("Missing "..name)
+end
+local function textButton(parent,text)
+    for _,child in ipairs(parent:GetDescendants()) do
+        if child:IsA("TextButton") and child.Text==text then return child end
+    end
+    error("Missing button "..text)
+end
+local function swatch(control,index)
+    local found={}
+    for _,child in ipairs(control.Frame:GetChildren()) do
+        if child:IsA("TextButton") and child.ZIndex==3 and child.Text=="" then table.insert(found,child) end
+    end
+    return assert(found[index or 1])
+end
+local window=Library:CreateWindow({Animations=false,ColorGallery={Color3.fromRGB(255,0,0),Color3.fromRGB(103,187,117)}})
+local tab=window:AddTab("assistance")
+local section=tab:AddSection("extra","Left",144)
+local toggle=section:AddToggle({Text="checkbox",Flag="toggle"})
+local callbacks=0
+local picker=toggle:AddColorPicker({Text="checkbox",Default=Color3.fromRGB(103,187,117),Flag="first",Callback=function() callbacks+=1 end})
+local second=toggle:AddColorPicker({Default=Color3.new(1,1,1),Flag="second"})
+local bind=toggle:AddKeybind({Mode="Toggle",Flag="key"})
+check(swatch(picker,1).Position.X.Offset<swatch(second,2).Position.X.Offset,"Swatch order follows insertion order")
+swatch(picker).Activated:Fire()
+local popup=assert(window.Picker)
+local colorInput=named(popup,"ColorInput")
+check(colorInput.Text=="103, 187, 117, 255","RGBA is the default format")
+colorInput.Text="10, 20, 30, 128" colorInput.FocusLost:Fire()
+check(picker:Get()==Color3.fromRGB(10,20,30) and near(picker:GetAlpha(),128/255),"RGBA updates color and alpha")
+check(callbacks==1,"One callback per color edit")
+colorInput.Text="10, 20, 30, 128" colorInput.FocusLost:Fire()
+check(callbacks==1,"Unchanged input does not emit a callback")
+for _,bad in ipairs({"256, 1, 2, 255","-1, 2, 3, 4","#GGGGGG","#12345","1, 2, 3","nan","1, 2, 3, 99999999999999999999999999999999999999999999999999999999"}) do
+    colorInput.Text=bad colorInput.FocusLost:Fire()
+    check(picker:Get()==Color3.fromRGB(10,20,30) and near(picker:GetAlpha(),128/255),"Invalid input preserves the previous value: "..bad)
+end
+check(callbacks==1,"Invalid input emits no callbacks")
+colorInput.Text="#67BB757F" colorInput.FocusLost:Fire()
+check(picker:Get()==Color3.fromRGB(103,187,117) and near(picker:GetAlpha(),127/255),"Eight-digit hex includes alpha")
+colorInput.Text="#abcdef" colorInput.FocusLost:Fire()
+check(picker:Get()==Color3.fromRGB(171,205,239) and near(picker:GetAlpha(),127/255),"Six-digit hex preserves alpha")
+textButton(popup,"Aa").Activated:Fire()
+check(colorInput.Text=="#ABCDEF7F","Aa switches to hexadecimal")
+textButton(popup,"Aa").Activated:Fire()
+check(colorInput.Text=="171, 205, 239, 127","Aa returns to RGBA")
+picker:SetAlpha(2) check(picker:GetAlpha()==1,"Alpha clamps at one")
+picker:SetAlpha(-1) check(picker:GetAlpha()==0,"Alpha clamps at zero")
+check(not pcall(function() picker:SetAlpha(0/0) end),"NaN alpha is rejected")
+picker:SetAlpha(0.25)
+textButton(popup,"save to gallery").Activated:Fire()
+check(window.Gallery[3].Color==picker:Get() and window.Gallery[3].Alpha==0.25,"Gallery stores color plus alpha")
+swatch(second,2).Activated:Fire()
+local popup2=assert(window.Picker)
+check(popup2~=popup and not popup.Visible,"Opening another picker closes the previous one")
+named(popup2,"Gallery3").Activated:Fire()
+check(second:Get()==picker:Get() and second:GetAlpha()==0.25,"Gallery entries are shared across pickers")
+second:Set(Color3.fromRGB(100,110,120))
+textButton(popup2,"save to gallery").Activated:Fire()
+check(window.Gallery[4].Color==second:Get() and window.Gallery[3].Color==picker:Get(),"Saving from another picker appends")
+for i=1,7 do textButton(popup2,"save to gallery").Activated:Fire() end
+check(#window.Gallery==10 and window.GalleryNext==2,"Gallery wraps after ten entries")
+input.InputBegan:Fire({UserInputType=Enum.UserInputType.Keyboard,KeyCode=Enum.KeyCode.Escape})
+check(window.Picker==nil and not popup2.Visible,"Escape closes the colorbox")
+toggle:SetEnabled(false)
+swatch(picker).Activated:Fire()
+check(window.Picker==nil,"Disabled toggle cannot open a colorbox")
+textButton(toggle.Frame,"[none]").Activated:Fire()
+check(window.Capture==nil,"Disabled toggle cannot capture a key")
+toggle:SetEnabled(true)
+swatch(picker).Activated:Fire()
+check(window.Picker==popup,"Re-enabled toggle can open the colorbox")
+local hue=named(popup,"Hue")
+hue.AbsolutePosition=Vector2.new(100,100) hue.AbsoluteSize=Vector2.new(14,150)
+local down={UserInputType=Enum.UserInputType.MouseButton1,Position=Vector2.new(107,150)}
+hue.InputBegan:Fire(down)
+local hsv=picker:Get():ToHSV()
+check(near(hsv,1/3),"Hue drag uses the pointer position")
+local sv=named(popup,"SaturationValue")
+sv.AbsolutePosition=Vector2.new(0,0) sv.AbsoluteSize=Vector2.new(150,150)
+sv.InputBegan:Fire({UserInputType=Enum.UserInputType.MouseButton1,Position=Vector2.new(200,-20)})
+check(picker:Get()==Color3.fromRGB(0,255,0),"SV drag clamps to its bounds")
+local alpha=named(popup,"Alpha")
+alpha.AbsolutePosition=Vector2.new(0,200) alpha.AbsoluteSize=Vector2.new(150,14)
+alpha.InputBegan:Fire({UserInputType=Enum.UserInputType.Touch,Position=Vector2.new(75,207)})
+check(picker:GetAlpha()==0.5,"Touch dragging changes alpha")
+window:_closePicker(true)
+check(window.Drag==nil,"Closing a colorbox cancels its active drag")
+window.Root.AbsoluteSize=Vector2.new(400,300) window.Scale.Scale=0.6
+swatch(picker).AbsolutePosition=Vector2.new(380,280) swatch(picker).AbsoluteSize=Vector2.new(14,10)
+swatch(picker).Activated:Fire()
+check(popup.Position.X.Offset>=0 and popup.Position.X.Offset+224*0.6<=400,"Popup fits narrow viewport horizontally")
+check(popup.Position.Y.Offset>=0 and popup.Position.Y.Offset+256*0.6<=300,"Popup fits short viewport vertically")
+input.InputBegan:Fire({UserInputType=Enum.UserInputType.MouseButton1,Position=Vector2.new(-1,-1)})
+check(window.Picker==nil,"Outside click dismisses the popup")
+local config=window:ExportConfig()
+local savedColor,savedAlpha=picker:Get(),picker:GetAlpha()
+picker:Set(Color3.new(0,0,0)) picker:SetAlpha(0)
+check(window:ImportConfig(config,true),"Configuration imports successfully")
+check(picker:Get()==savedColor and picker:GetAlpha()==savedAlpha,"Configuration restores color and alpha")
+swatch(picker).Activated:Fire()
+window:SetVisible(false)
+check(window.Picker==nil and not popup.Visible,"Hiding the window closes the colorbox")
+window:Destroy()
+check(window.Destroyed and #window.Connections==0,"Destroy disconnects registered input handlers")
+print(string.format("PASS: %d colorbox behavior checks",checks))
