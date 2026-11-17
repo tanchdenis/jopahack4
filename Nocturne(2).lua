@@ -10,8 +10,8 @@ local Library = { Version = "1.14.0", Fonts = {"Tahoma XP","Small Fonts"} }
 local Window, Tab, Section = {}, {}, {}
 Window.__index, Tab.__index, Section.__index = Window, Tab, Section
 local C = {
-    Outer = Color3.fromRGB(25,25,25), Panel = Color3.fromRGB(25,25,25),
-    Field = Color3.fromRGB(19,19,19), Border = Color3.fromRGB(42,42,42),
+    Outer = Color3.fromRGB(19,19,19), Panel = Color3.fromRGB(25,25,25),
+    Field = Color3.fromRGB(19,19,19), Border = Color3.fromRGB(48,48,48),
     Text = Color3.fromRGB(222,220,224), Muted = Color3.fromRGB(136,134,139),
     Accent = Color3.fromRGB(159,148,174),
     On = Color3.fromRGB(212,196,138), Info = Color3.fromRGB(74,144,255), Risk = Color3.fromRGB(225,70,70),
@@ -549,8 +549,8 @@ function Library:CreateWindow(opts)
     stroke(inner,Color3.fromRGB(39,39,39))
     local scale = make("UIScale", {Scale=1}, main)
     self.Scale = scale
-    local topLine = frame(main, {Position=UDim2.fromOffset(5,5), Size=UDim2.new(1,-10,0,1)})
-    self:_accent(topLine, "BackgroundColor3")
+    frame(main, {Position=UDim2.fromOffset(5,5), Size=UDim2.new(1,-10,0,1),
+        BackgroundColor3=Color3.fromRGB(82,82,82)})
     local dragBar = button(main, "", {Position=UDim2.fromOffset(5,6), Size=UDim2.new(1,-10,0,9), BackgroundTransparency=1})
     self:_tip(dragBar, "Drag to move the window", true)
     self.TabBar = frame(main, {Position=UDim2.fromOffset(16,10), Size=UDim2.new(1,-32,0,21), BackgroundTransparency=1})
@@ -677,7 +677,7 @@ end
 function Window:AddTab(name)
     local tab = setmetatable({Window=self,Name=name,Sections={}},Tab)
     tab.Button = button(self.TabBar,name,{Bold=true,BackgroundTransparency=1,TextSize=11})
-    tab.Line = frame(tab.Button,{Position=UDim2.new(0,0,1,-1),Size=UDim2.new(1,0,0,1),BackgroundColor3=C.Muted})
+    tab.Line = frame(tab.Button,{Position=UDim2.new(0,0,1,-1),Size=UDim2.new(1,0,0,1),BackgroundColor3=Color3.fromRGB(105,105,105)})
     tab.PagePosition = UDim2.fromOffset(6,6)
     tab.PageEnterPosition = UDim2.fromOffset(6,9)
     tab.Page = make("CanvasGroup",{Position=tab.PagePosition,Size=UDim2.new(1,-16,1,-12),
@@ -720,11 +720,9 @@ function Tab:Select()
         end
         self.Window:_tween(tab.Button,0.1,{TextColor3=active and C.Text or C.Muted})
         if active then
-            self.Window.Accents[tab.Line]="BackgroundColor3"
-            self.Window:_tween(tab.Line,0.12,{BackgroundColor3=self.Window.Accent})
+            self.Window:_tween(tab.Line,0.12,{BackgroundColor3=Color3.fromRGB(130,130,130)})
         else
-            self.Window.Accents[tab.Line]=nil
-            self.Window:_tween(tab.Line,0.12,{BackgroundColor3=C.Muted})
+            self.Window:_tween(tab.Line,0.12,{BackgroundColor3=Color3.fromRGB(105,105,105)})
         end
     end
     self.Window.SelectedTab = self
@@ -736,7 +734,7 @@ function Tab:AddSection(name, side, minHeight)
     stroke(panel)
     if minHeight then make("UISizeConstraint",{MinSize=Vector2.new(0,minHeight)},panel) end
     local title = label(panel," "..name.." ",{Bold=true,Position=UDim2.fromOffset(7,-8),Size=UDim2.fromOffset(0,16),
-        AutomaticSize=Enum.AutomaticSize.X,BackgroundTransparency=0,BackgroundColor3=C.Panel,TextSize=11,ZIndex=2})
+        AutomaticSize=Enum.AutomaticSize.X,BackgroundTransparency=1,TextSize=11,ZIndex=2})
     local content = frame(panel,{Position=UDim2.fromOffset(13,12),Size=UDim2.new(1,-26,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1})
     list(content,0)
     make("UIPadding",{PaddingBottom=UDim.new(0,12)},content)
