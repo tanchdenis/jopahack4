@@ -1,4 +1,14 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/tanchdenis/warrenik/main/Nocturne.lua"))()
+-- Studio: place a ModuleScript named Nocturne beside this LocalScript.
+-- File-capable environments: place Nocturne(2).lua in the working directory.
+local module = script and script.Parent and script.Parent:FindFirstChild("Nocturne")
+local Library
+if module and module:IsA("ModuleScript") then
+    Library = require(module)
+elseif type(readfile) == "function" and type(isfile) == "function" and isfile("Nocturne(2).lua") then
+    Library = assert(loadstring(readfile("Nocturne(2).lua")))()
+else
+    Library = assert(loadstring(game:HttpGet("https://raw.githubusercontent.com/tanchdenis/jopahack4/main/Nocturne%282%29.lua")))()
+end
 
 local Player = game:GetService("Players").LocalPlayer
 local ROLE = "fallen"
@@ -13,6 +23,7 @@ local Window = Library:CreateWindow({
     Animations = true,
     AnimationSpeed = 1,
     Font = "Tahoma XP",
+    ColorGallery = { Color3.fromRGB(255, 0, 0), Color3.fromRGB(103, 187, 117) },
 })
 
 -- Callbacks: put your own logic here. It stays silent so the footer keeps showing the role.
@@ -47,21 +58,21 @@ end
 
 local Assistance = Window:AddTab("assistance")
 local Visuals = Window:AddTab("visuals")
-local Settings = Window:AddTab("settings")
+local Settings = Window:AddTab("miscellaneous")
 
 ----------------------------------------------------------------------
 -- assistance / left column
 ----------------------------------------------------------------------
 local Models = Assistance:AddSection("players models", "Left", 246)
 
-toggle(Models, "visible model", "visible", Color3.fromRGB(62, 88, 249), {
+toggle(Models, "visible model", "visible", Color3.fromRGB(42, 24, 225), {
     On = true,
     Info = info("visible model", "assistance - players models", "Color and material settings for the visible model."),
 })
 Models:AddDropdown({ Text = "material", Values = { "3d", "2d", "flat" }, Flag = "material", Callback = report })
 Models:AddSlider({ Text = "intensity", Min = 0, Max = 100, Default = 7, Suffix = "x", Flag = "intensity", Callback = report })
 
-toggle(Models, "occluded model", "occluded", Color3.fromRGB(176, 60, 225), {
+toggle(Models, "occluded model", "occluded", Color3.fromRGB(176, 20, 225), {
     On = true,
     Info = info("occluded model", "assistance - players models", "Color and material settings for the occluded model."),
 })
@@ -93,7 +104,6 @@ local function world(section, prefix)
     section:AddSlider({ Text = "star brightness", Min = 0, Max = 500, Default = 300, Suffix = "%", Flag = prefix .. "starBrightness", Callback = report })
 
     toggle(section, "day sky", prefix .. "daySky", Color3.fromRGB(83, 66, 170), {
-        On = true,
         Info = info("day sky", path, "Tints the sky during daytime with the chosen color. Pairs with night sky to color each half of the cycle separately.", "can be seen in screen recordings"),
     })
     toggle(section, "night sky", prefix .. "nightSky", Color3.fromRGB(48, 175, 125), {
@@ -101,7 +111,7 @@ local function world(section, prefix)
     })
 end
 
-world(Assistance:AddSection("world modulation", "Left"), "main")
+world(Assistance:AddSection("world modulation", "Left", 246), "main")
 
 ----------------------------------------------------------------------
 -- assistance / right column
@@ -119,7 +129,8 @@ toggle(Master, "master", "master", nil, {
 Master:AddSlider({ Text = "max distance", Min = 0, Max = 500, Default = 200, Suffix = "m", Flag = "distance", Callback = report })
 
 General = Assistance:AddSection("general", "Right", 190)
-General:AddDropdown({ Text = "bounding box", Values = { "2d", "3d", "cornered" }, Flag = "boxStyle", Callback = report })
+General:AddDropdown({ Text = "bounding box", Values = { "2d", "3d", "cornered" }, Flag = "boxStyle", Callback = report,
+    Info = info("bounding box", "assistance - general", "Selects the style of the bounding box.") })
 for _, name in ipairs({ "name", "distance", "skeleton", "held item" }) do
     toggle(General, name, "general" .. name, Color3.new(1, 1, 1), {
         Info = name == "held item" and info("held item", "assistance - general", "Shows the item currently held.") or nil,
@@ -127,11 +138,11 @@ for _, name in ipairs({ "name", "distance", "skeleton", "held item" }) do
 end
 General:SetEnabled(false) -- greyed out until master is on
 
-local Extra = Assistance:AddSection("extra", "Right", 140)
+local Extra = Assistance:AddSection("extra", "Right", 144)
 local checkbox = toggle(Extra, "checkbox", "extra", Color3.new(1, 1, 1), {
     Info = info("checkbox", "assistance - extra", "A toggle with two colors and a key bind. Right click the key to change its mode."),
 })
-checkbox:AddColorPicker({ Default = Color3.new(1, 1, 1), Flag = "extraColor2", Callback = report })
+checkbox:AddColorPicker({ Default = Color3.fromRGB(103, 187, 117), Flag = "extraColor2", Callback = report })
 checkbox:AddKeybind({ Mode = "Toggle", Flag = "extraKey", Callback = report }) -- right click: on hold / off hold / toggle / always on
 
 ----------------------------------------------------------------------
@@ -202,7 +213,7 @@ Skins:AddListbox({
 })
 
 ----------------------------------------------------------------------
--- settings (was "miscellaneous")
+-- miscellaneous
 ----------------------------------------------------------------------
 local Interface = Settings:AddSection("interface", "Left")
 Interface:AddColorPicker({ Text = "accent", Default = Window.Accent, Flag = "accent", Callback = function(c) Window:SetAccent(c) end })

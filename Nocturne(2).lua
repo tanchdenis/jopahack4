@@ -1,17 +1,17 @@
--- Nocturne UI 1.13 | Client-side Luau | Generated utility icons + refined frame.
--- 1.13: info icons with rich tooltips, toggle key binds with a mode menu, SetEnabled, footer avatar.
+-- Nocturne UI 1.14 | Client-side Luau | Compact reference layout and colorbox.
+-- 1.14: inset fields, compact rows, RGBA colorbox and shared color gallery.
 -- ModuleScript: require(module). Executor: loadstring(source)().
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local Http = game:GetService("HttpService")
 local TweenService
 pcall(function() TweenService = game:GetService("TweenService") end)
-local Library = { Version = "1.13.0", Fonts = {"Tahoma XP","Small Fonts"} }
+local Library = { Version = "1.14.0", Fonts = {"Tahoma XP","Small Fonts"} }
 local Window, Tab, Section = {}, {}, {}
 Window.__index, Tab.__index, Section.__index = Window, Tab, Section
 local C = {
-    Outer = Color3.fromRGB(19,19,19), Panel = Color3.fromRGB(25,25,25),
-    Field = Color3.fromRGB(19,19,19), Border = Color3.fromRGB(48,48,48),
+    Outer = Color3.fromRGB(25,25,25), Panel = Color3.fromRGB(25,25,25),
+    Field = Color3.fromRGB(19,19,19), Border = Color3.fromRGB(42,42,42),
     Text = Color3.fromRGB(222,220,224), Muted = Color3.fromRGB(136,134,139),
     Accent = Color3.fromRGB(159,148,174),
     On = Color3.fromRGB(212,196,138), Info = Color3.fromRGB(74,144,255), Risk = Color3.fromRGB(225,70,70),
@@ -237,7 +237,7 @@ local function make(class, props, parent)
         if key~="Bold" and key~="Decoration" and key~="NoShadow" then object[key] = value end
     end
     if (class=="TextLabel" or class=="TextButton" or class=="TextBox") and not (props and props.Decoration) then
-        object.TextSize=math.max(12,math.floor((props and props.TextSize or 12)+0.5))
+        object.TextSize=math.max(9,math.floor((props and props.TextSize or 11)+0.5))
         object.TextStrokeColor3=(props and props.TextStrokeColor3) or Color3.new(0,0,0)
         object.TextStrokeTransparency=(props and props.TextStrokeTransparency) or 1
         local face=Faces[props and props.Bold and "Bold" or "Regular"]
@@ -263,7 +263,7 @@ end
 local function label(parent, text, props)
     local defaults = {
         BackgroundTransparency = 1, BorderSizePixel = 0, Text = text,
-        Font = Enum.Font.Code, TextSize = 12, TextColor3 = C.Text,
+        Font = Enum.Font.Code, TextSize = 11, TextColor3 = C.Text,
         TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1,0,0,20),
     }
     for k,v in pairs(props or {}) do defaults[k] = v end
@@ -272,7 +272,7 @@ end
 local function button(parent, text, props)
     local defaults = {
         BackgroundColor3 = C.Field, BorderSizePixel = 0, AutoButtonColor = false,
-        Text = text, Font = Enum.Font.Code, TextSize = 12, TextColor3 = C.Text,
+        Text = text, Font = Enum.Font.Code, TextSize = 11, TextColor3 = C.Text,
         Size = UDim2.new(1,0,0,22),
     }
     for k,v in pairs(props or {}) do defaults[k] = v end
@@ -495,9 +495,18 @@ function Library:CreateWindow(opts)
         AnimationsEnabled = opts.Animations ~= false,
         AnimationSpeed = math.clamp(opts.AnimationSpeed or 1, 0.1, 10),
         Accent = opts.Accent or C.Accent, ToggleKey = opts.ToggleKey or Enum.KeyCode.RightShift,
-        Width = math.clamp(opts.Width or 540, 420, 1400), Height = math.clamp(opts.Height or 620, 320, 1000),
+        Width = math.clamp(opts.Width or 530, 420, 1400), Height = math.clamp(opts.Height or 620, 320, 1000),
+        Gallery = {}, GalleryNext = 1,
         RegistryKey = "__NocturneUI_" .. (opts.Id or "Default"), Destroyed = false,
     }, Window)
+    for i, entry in ipairs(opts.ColorGallery or {}) do
+        if i > 10 then break end
+        local color = typeof(entry) == "Color3" and entry or entry.Color
+        local alpha = typeof(entry) == "Color3" and 1 or (entry.Alpha or 1)
+        assert(typeof(color) == "Color3" and finite(alpha), "Invalid ColorGallery entry")
+        self.Gallery[i] = {Color=color, Alpha=math.clamp(alpha,0,1)}
+        self.GalleryNext = i % 10 + 1
+    end
     local env = _G
     if type(getgenv) == "function" then
         local ok, result = pcall(getgenv)
@@ -543,16 +552,16 @@ function Library:CreateWindow(opts)
     local topLine = frame(main, {Position=UDim2.fromOffset(5,5), Size=UDim2.new(1,-10,0,1)})
     self:_accent(topLine, "BackgroundColor3")
     local dragBar = button(main, "", {Position=UDim2.fromOffset(5,6), Size=UDim2.new(1,-10,0,9), BackgroundTransparency=1})
-    self:_tip(dragBar, "Drag to move the window")
-    self.TabBar = frame(main, {Position=UDim2.fromOffset(16,15), Size=UDim2.new(1,-32,0,27), BackgroundTransparency=1})
-    local surface = frame(main, {Position=UDim2.fromOffset(16,52), Size=UDim2.new(1,-32,1,-96), BackgroundColor3=Color3.fromRGB(16,16,16), ClipsDescendants=true})
+    self:_tip(dragBar, "Drag to move the window", true)
+    self.TabBar = frame(main, {Position=UDim2.fromOffset(16,10), Size=UDim2.new(1,-32,0,21), BackgroundTransparency=1})
+    local surface = frame(main, {Position=UDim2.fromOffset(18,42), Size=UDim2.new(1,-36,1,-88), BackgroundColor3=Color3.fromRGB(16,16,16), ClipsDescendants=true})
     stroke(surface)
     local dots = {}
-    for i=1,110 do dots[i] = string.rep(". ",100) end
-    label(surface, table.concat(dots,"\n"), {Size=UDim2.fromOffset(1200,1400), TextSize=9,
-        Decoration=true,TextColor3=Color3.fromRGB(51,51,51), TextYAlignment=Enum.TextYAlignment.Top})
+    for i=1,180 do dots[i] = string.rep(". ",210) end
+    label(surface, table.concat(dots,"\n"), {Size=UDim2.fromOffset(1500,1500), TextSize=6,
+        Decoration=true,TextColor3=Color3.fromRGB(43,43,43), TextYAlignment=Enum.TextYAlignment.Top})
     self.Surface = surface
-    local footer = frame(main, {Position=UDim2.new(0,16,1,-35),Size=UDim2.new(1,-32,0,28),BackgroundTransparency=1})
+    local footer = frame(main, {Position=UDim2.new(0,18,1,-39),Size=UDim2.new(1,-36,0,28),BackgroundTransparency=1})
     local badge = label(footer, opts.Avatar and "" or "N", {Size=UDim2.fromOffset(24,24), BackgroundTransparency=0,
         BackgroundColor3=C.Field, TextXAlignment=Enum.TextXAlignment.Center,TextSize=18})
     stroke(badge)
@@ -564,14 +573,14 @@ function Library:CreateWindow(opts)
         make("ImageLabel",{Image=source,Position=UDim2.fromOffset(1,1),Size=UDim2.new(1,-2,1,-2),
             BackgroundTransparency=1,BorderSizePixel=0},badge)
     end
-    label(footer, opts.Title or "nocturne / interface", {Bold=true,Position=UDim2.fromOffset(32,-2),Size=UDim2.new(1,-70,0,16),TextSize=12})
-    self.Status = label(footer, opts.Subtitle or "ready", {Position=UDim2.fromOffset(32,12),Size=UDim2.new(1,-70,0,14),TextSize=11,TextColor3=C.Muted})
+    label(footer, opts.Title or "nocturne / interface", {Bold=true,Position=UDim2.fromOffset(30,-2),Size=UDim2.new(1,-70,0,16),TextSize=11})
+    self.Status = label(footer, opts.Subtitle or "ready", {Position=UDim2.fromOffset(30,10),Size=UDim2.new(1,-70,0,14),TextSize=11,TextColor3=C.Muted})
     local grip = button(main, "", {Position=UDim2.new(1,-25,1,-25), Size=UDim2.fromOffset(20,20),BackgroundTransparency=1})
     texture(grip,"resize.png",{Position=UDim2.fromOffset(1,1),Size=UDim2.fromOffset(18,18),ImageColor3=Color3.new(1,1,1)})
     self.Tooltip = label(root,"", {Visible=false,BackgroundTransparency=0,BackgroundColor3=C.Field,
-        Size=UDim2.fromOffset(236,0), AutomaticSize=Enum.AutomaticSize.Y, RichText=true,
-        TextWrapped=true,TextSize=12,TextYAlignment=Enum.TextYAlignment.Top,ZIndex=100})
-    padding(self.Tooltip,8)
+        Size=UDim2.fromOffset(204,0), AutomaticSize=Enum.AutomaticSize.Y, RichText=true,
+        TextWrapped=true,TextSize=11,TextYAlignment=Enum.TextYAlignment.Top,ZIndex=100})
+    padding(self.Tooltip,6)
     stroke(self.Tooltip)
     -- A small persistent toggle also allows touch-only users to reopen the UI.
     local launcher = button(root,"N",{Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(28,28),ZIndex=20})
@@ -667,26 +676,27 @@ end
 
 function Window:AddTab(name)
     local tab = setmetatable({Window=self,Name=name,Sections={}},Tab)
-    tab.Button = button(self.TabBar,name,{Bold=true,BackgroundTransparency=1,TextSize=12})
-    tab.Line = frame(tab.Button,{Position=UDim2.new(0,0,1,-2),Size=UDim2.new(1,0,0,2),BackgroundColor3=C.Muted})
-    tab.PagePosition = UDim2.fromOffset(12,12)
-    tab.PageEnterPosition = UDim2.fromOffset(12,15)
-    tab.Page = make("CanvasGroup",{Position=tab.PagePosition,Size=UDim2.new(1,-24,1,-24),
+    tab.Button = button(self.TabBar,name,{Bold=true,BackgroundTransparency=1,TextSize=11})
+    tab.Line = frame(tab.Button,{Position=UDim2.new(0,0,1,-1),Size=UDim2.new(1,0,0,1),BackgroundColor3=C.Muted})
+    tab.PagePosition = UDim2.fromOffset(6,6)
+    tab.PageEnterPosition = UDim2.fromOffset(6,9)
+    tab.Page = make("CanvasGroup",{Position=tab.PagePosition,Size=UDim2.new(1,-16,1,-12),
         BackgroundTransparency=1,BorderSizePixel=0,GroupTransparency=0,Visible=false},self.Surface)
     tab.Columns = {}
     for i=1,2 do
         local column = make("ScrollingFrame",{BackgroundTransparency=1,BorderSizePixel=0,
-            Position=UDim2.new((i-1)*0.5,(i-1)*6,0,0),Size=UDim2.new(0.5,-6,1,0),
+            Position=UDim2.new((i-1)*0.5,0,0,0),Size=UDim2.new(0.5,0,1,0),
             CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,
             ScrollingDirection=Enum.ScrollingDirection.Y,ScrollBarThickness=2,ScrollBarImageColor3=C.Muted,
             ClipsDescendants=true},tab.Page)
-        padding(column,8)
+        make("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,4),
+            PaddingTop=UDim.new(0,8),PaddingBottom=UDim.new(0,8)},column)
         list(column,12)
         tab.Columns[i] = column
     end
     table.insert(self.Tabs,tab)
     for i,t in ipairs(self.Tabs) do
-        t.Button.Position=UDim2.new((i-1)/#self.Tabs,3,0,0)
+        t.Button.Position=UDim2.new((i-1)/#self.Tabs,0,0,0)
         t.Button.Size=UDim2.new(1/#self.Tabs,-6,1,0)
     end
     self:_connect(tab.Button.Activated,function() tab:Select() end)
@@ -721,15 +731,15 @@ function Tab:Select()
 end
 function Tab:AddSection(name, side, minHeight)
     local column = (side == "Right" or side == 2) and 2 or 1
-    local panel = frame(self.Columns[column],{Size=UDim2.new(1,-3,0,0),AutomaticSize=Enum.AutomaticSize.Y,
+    local panel = frame(self.Columns[column],{Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,
         LayoutOrder=#self.Sections+1})
     stroke(panel)
     if minHeight then make("UISizeConstraint",{MinSize=Vector2.new(0,minHeight)},panel) end
     local title = label(panel," "..name.." ",{Bold=true,Position=UDim2.fromOffset(7,-8),Size=UDim2.fromOffset(0,16),
-        AutomaticSize=Enum.AutomaticSize.X,BackgroundTransparency=1,BackgroundColor3=C.Panel,TextSize=12,ZIndex=2})
-    local content = frame(panel,{Position=UDim2.fromOffset(10,22),Size=UDim2.new(1,-20,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1})
-    list(content,4)
-    make("UIPadding",{PaddingBottom=UDim.new(0,11)},content)
+        AutomaticSize=Enum.AutomaticSize.X,BackgroundTransparency=0,BackgroundColor3=C.Panel,TextSize=11,ZIndex=2})
+    local content = frame(panel,{Position=UDim2.fromOffset(13,12),Size=UDim2.new(1,-26,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1})
+    list(content,0)
+    make("UIPadding",{PaddingBottom=UDim.new(0,12)},content)
     local section = setmetatable({Window=self.Window,Frame=panel,Content=content,Title=title,Count=0,Items={}},Section)
     table.insert(self.Sections,section)
     return section
@@ -763,6 +773,8 @@ function Section:AddButton(opts)
 end
 function Section:AddToggle(opts)
     local win,row=self.Window,self:_row(16)
+    -- Align accessory swatches with the right edge of the inset fields.
+    row.Size=UDim2.new(1,-13,0,16)
     local hit=button(row,"",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1})
     local box=frame(hit,{Position=UDim2.fromOffset(0,4),Size=UDim2.fromOffset(8,8),BackgroundColor3=C.Field})
     stroke(box)
@@ -775,13 +787,18 @@ function Section:AddToggle(opts)
     local dim=frame(row,{Size=UDim2.fromScale(1,1),BackgroundColor3=C.Panel,BackgroundTransparency=1,ZIndex=10,Active=false})
     local function relayout()
         local used=control.Reserved+control.Accessories*25
-        if used>0 then hit.Size=UDim2.new(1,-(used+8),1,0) end
+        if used>0 then hit.Size=UDim2.new(1,-(used+4),1,0) end
+        dim.Size=hit.Size
     end
     function control:AddColorPicker(options)
         options=table.clone(options or {})
+        for _,picker in ipairs(self.Pickers) do
+            picker.Position=UDim2.new(1,picker.Position.X.Offset-25,0,0)
+        end
         self.Accessories=self.Accessories+1
-        options.Row=row options.Slot=self.Accessories options.Text=options.Text or opts.Text
+        options.Row=row options.Slot=1 options.Text=options.Text or opts.Text
         options.Offset=self.Reserved options.Hits=self.Hits options.Pickers=self.Pickers
+        options.IsEnabled=function() return control.Enabled end
         relayout()
         return section:AddColorPicker(options)
     end
@@ -789,13 +806,14 @@ function Section:AddToggle(opts)
     function control:AddKeybind(options)
         assert(not self.Bind,"Toggle already has a keybind")
         options=table.clone(options or {})
-        local width=options.Width or 44
+        local width=options.Width or 34
         for _,picker in ipairs(self.Pickers) do
             picker.Position=UDim2.new(1,picker.Position.X.Offset-width,0,0)
         end
         self.Reserved=width
         relayout()
         options.Row=row options.Compact=true options.Width=width options.Offset=0 options.Hits=self.Hits
+        options.IsEnabled=function() return control.Enabled end
         options.Text=options.Text or opts.Text
         self.Bind=section:AddKeybind(options)
         return self.Bind
@@ -803,7 +821,7 @@ function Section:AddToggle(opts)
     function control:SetEnabled(value)
         value=value~=false
         self.Enabled=value
-        dim.BackgroundTransparency=value and 1 or 0.45
+        dim.BackgroundTransparency=value and 1 or 0.25
         for _,accessory in ipairs(self.Hits) do accessory.Active=value end
     end
     function control:Validate(value) return type(value)=="boolean" end
@@ -832,26 +850,26 @@ function Section:AddToggle(opts)
     return win:_register(control,opts)
 end
 function Section:AddSlider(opts)
-    local win,row=self.Window,self:_row(36)
+    local win,row=self.Window,self:_row(32)
     local min,max,step=opts.Min or 0,opts.Max or 100,opts.Step or 1
     assert(finite(min) and finite(max) and max>min and finite(step) and step>0,"Invalid slider range")
-    label(row,opts.Text or "slider",{TextSize=11,Size=UDim2.new(1,0,0,16)})
-    local hit=button(row,"",{Position=UDim2.fromOffset(16,16),Size=UDim2.new(1,-32,0,22),BackgroundTransparency=1})
-    local track=frame(hit,{Position=UDim2.fromOffset(0,7),Size=UDim2.new(1,0,0,5),BackgroundColor3=C.Field})
-    stroke(track,Color3.fromRGB(55,55,55))
+    label(row,opts.Text or "slider",{TextSize=11,Position=UDim2.fromOffset(16,0),Size=UDim2.new(1,-32,0,16)})
+    local hit=button(row,"",{Position=UDim2.fromOffset(16,16),Size=UDim2.new(1,-32,0,16),BackgroundTransparency=1})
+    local track=frame(hit,{Position=UDim2.fromOffset(0,5),Size=UDim2.new(1,0,0,4),BackgroundColor3=C.Field})
+    stroke(track)
     local fill=frame(track,{Size=UDim2.fromScale(0,1)})
     win:_accent(fill,"BackgroundColor3")
     make("UIGradient",{Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromRGB(105,105,105)),Rotation=90},fill)
     -- Slider values intentionally use a real outline instead of the global
     -- offset shadow. This keeps the glyph stable while the TextBox owns focus.
     local valueLabel=label(hit,"",{NoShadow=true,Bold=true,Size=UDim2.fromScale(1,1),TextXAlignment=Enum.TextXAlignment.Center,
-        TextSize=12,ZIndex=2,TextStrokeColor3=Color3.new(0,0,0),TextStrokeTransparency=0})
-    local less=button(row,"-",{Position=UDim2.fromOffset(0,16),Size=UDim2.fromOffset(16,22),BackgroundTransparency=1,TextColor3=C.Muted,Bold=true})
-    local more=button(row,"+",{Position=UDim2.new(1,-16,0,16),Size=UDim2.fromOffset(16,22),BackgroundTransparency=1,TextColor3=C.Muted,Bold=true})
-    local edit=make("TextBox",{NoShadow=true,Visible=false,Size=UDim2.fromOffset(64,22),BackgroundTransparency=1,BorderSizePixel=0,
-        Text="",TextColor3=C.Text,TextXAlignment=Enum.TextXAlignment.Center,TextSize=12,TextStrokeColor3=Color3.new(0,0,0),
+        TextSize=11,ZIndex=2,TextStrokeColor3=Color3.new(0,0,0),TextStrokeTransparency=0})
+    local less=button(row,"-",{Position=UDim2.fromOffset(0,16),Size=UDim2.fromOffset(16,16),BackgroundTransparency=1,TextColor3=C.Muted})
+    local more=button(row,"+",{Position=UDim2.new(1,-16,0,16),Size=UDim2.fromOffset(16,16),BackgroundTransparency=1,TextColor3=C.Muted})
+    local edit=make("TextBox",{NoShadow=true,Visible=false,Size=UDim2.fromOffset(64,16),BackgroundTransparency=1,BorderSizePixel=0,
+        Text="",TextColor3=C.Text,TextXAlignment=Enum.TextXAlignment.Center,TextSize=11,TextStrokeColor3=Color3.new(0,0,0),
         TextStrokeTransparency=0,ClearTextOnFocus=false,Bold=true,ZIndex=6},hit)
-    local valueButton=button(hit,"",{BackgroundTransparency=1,Size=UDim2.fromOffset(52,22),ZIndex=4})
+    local valueButton=button(hit,"",{BackgroundTransparency=1,Size=UDim2.fromOffset(52,16),ZIndex=4})
     local control={Kind="Slider",Value=min,Frame=row}
     local errorGeneration=0
     local function invalid()
@@ -887,7 +905,7 @@ function Section:AddSlider(opts)
         valueLabel.Text=opts.Format and opts.Format(value) or (tostring(value)..(opts.Suffix or ""))
         local fraction=(value-min)/(max-min)
         valueLabel.AnchorPoint=Vector2.new(fraction,0)
-        valueLabel.Size=UDim2.fromOffset(64,22)
+        valueLabel.Size=UDim2.fromOffset(math.max(18,valueLabel.TextBounds.X+4),16)
         valueLabel.Position=UDim2.new(fraction,0,0,0)
         valueButton.AnchorPoint=valueLabel.AnchorPoint
         valueButton.Size=valueLabel.Size
@@ -947,19 +965,19 @@ function Section:AddSlider(opts)
     return win:_register(control,opts)
 end
 function Section:AddDropdown(opts)
-    local win,row=self.Window,self:_row(43)
+    local win,row=self.Window,self:_row(40)
     local values={}
     for _,value in ipairs(opts.Values or {}) do
         assert(type(value)=="string" and not table.find(values,value),"Dropdown values must be unique strings")
         table.insert(values,value)
     end
     assert(#values>0,"Dropdown requires Values")
-    label(row,opts.Text or "select",{TextSize=11,Size=UDim2.new(1,0,0,16)})
-    local selected=button(row,"",{Position=UDim2.fromOffset(0,18),Size=UDim2.new(1,0,0,21),TextXAlignment=Enum.TextXAlignment.Left,TextSize=11})
+    local caption=label(row,opts.Text or "select",{TextSize=11,Position=UDim2.fromOffset(16,0),Size=UDim2.new(1,-32,0,16)})
+    local selected=button(row,"",{Position=UDim2.fromOffset(16,18),Size=UDim2.new(1,-32,0,18),TextXAlignment=Enum.TextXAlignment.Left,TextSize=11})
     make("UIPadding",{PaddingLeft=UDim.new(0,5),PaddingRight=UDim.new(0,25)},selected)
     stroke(selected)
     local iconName=opts.Icon=="grid" and "grid.png" or "menu.png"
-    local dropdownIcon=texture(selected,iconName,{Position=UDim2.new(1,-20,0.5,-9),Size=UDim2.fromOffset(18,18),ImageColor3=Color3.new(1,1,1),ZIndex=3})
+    local dropdownIcon=texture(selected,iconName,{Position=UDim2.new(1,-16,0.5,-6),Size=UDim2.fromOffset(12,12),ImageColor3=Color3.new(1,1,1),ZIndex=3})
     if not dropdownIcon then label(selected,"=",{Size=UDim2.fromScale(1,1),TextXAlignment=Enum.TextXAlignment.Right,TextColor3=C.Muted}) end
     local menu=make("ScrollingFrame",{Visible=false,Position=UDim2.fromOffset(0,43),Size=UDim2.new(1,0,0,0),BackgroundColor3=C.Field,
         BorderSizePixel=0,CanvasSize=UDim2.fromOffset(0,#values*23),ScrollBarThickness=2,ScrollBarImageColor3=C.Muted,ScrollingDirection=Enum.ScrollingDirection.Y},row)
@@ -1027,7 +1045,7 @@ function Section:AddDropdown(opts)
             if not inside(menu) and not inside(selected) then open(false) end
         end
     end)
-    win:_tip(selected,opts.Tooltip)
+    win:_tip(caption,opts.Info or opts.Tooltip)
     return win:_register(control,opts)
 end
 function Section:AddTextbox(opts)
@@ -1110,19 +1128,21 @@ function Section:AddKeybind(opts)
     function control:Get() return self.Value end
     control:Set(opts.Default,true)
     win:_connect(bindButton.Activated,function()
+        if opts.IsEnabled and not opts.IsEnabled() then return end
         win:_cancelCapture() win.Capture=control bindButton.Text="..."
     end)
     if compact then
-        local popup=frame(win.Root,{Visible=false,BackgroundColor3=C.Field,ZIndex=90,Size=UDim2.fromOffset(76,20+#BindOrder*17)})
+        local popup=frame(win.Root,{Visible=false,BackgroundColor3=C.Field,ZIndex=90,Size=UDim2.fromOffset(72,18+#BindOrder*14)})
         stroke(popup,Color3.fromRGB(70,70,70))
-        label(popup,"mode",{Position=UDim2.fromOffset(8,2),Size=UDim2.new(1,-8,0,16),TextSize=11,TextColor3=C.Muted,ZIndex=91})
+        label(popup,"mode",{Position=UDim2.fromOffset(0,1),Size=UDim2.new(1,0,0,14),TextSize=10,TextXAlignment=Enum.TextXAlignment.Center,TextColor3=C.Muted,ZIndex=91})
+        frame(popup,{Position=UDim2.fromOffset(1,16),Size=UDim2.new(1,-2,0,1),BackgroundColor3=C.Border,ZIndex=91})
         local entries={}
         local function closePopup()
             if win.Picker==popup then win.Picker=nil end
             popup.Visible=false
         end
         for index,mode in ipairs(BindOrder) do
-            local item=button(popup,BindModes[mode],{Position=UDim2.fromOffset(0,20+(index-1)*17),Size=UDim2.new(1,0,0,17),
+            local item=button(popup,BindModes[mode],{Position=UDim2.fromOffset(0,18+(index-1)*14),Size=UDim2.new(1,0,0,14),
                 BackgroundTransparency=1,TextXAlignment=Enum.TextXAlignment.Left,TextSize=11,ZIndex=91})
             make("UIPadding",{PaddingLeft=UDim.new(0,9)},item)
             local bar=frame(item,{Position=UDim2.fromOffset(3,2),Size=UDim2.new(0,2,1,-4),Visible=false,ZIndex=92})
@@ -1140,6 +1160,7 @@ function Section:AddKeybind(opts)
         refreshModes()
         win.PopupClosers[popup]=function() popup.Visible=false end
         win:_connect(bindButton.MouseButton2Click,function()
+            if opts.IsEnabled and not opts.IsEnabled() then return end
             if popup.Visible then closePopup() return end
             win:_closePicker(true)
             win.Picker=popup
@@ -1175,55 +1196,81 @@ function Section:AddColorPicker(opts)
         if opts.Hits then table.insert(opts.Hits,hit) end
         if opts.Pickers then table.insert(opts.Pickers,hit) end
     else label(hit,opts.Text or "color",{Size=UDim2.new(1,-36,1,0)}) end
-    local swatch=frame(hit,{Position=UDim2.new(1,-20,0,5),Size=UDim2.fromOffset(18,8)})
+    local swatch=frame(hit,{Position=UDim2.new(1,-20,0,4),Size=UDim2.fromOffset(18,8)})
     stroke(swatch)
     make("UIGradient",{Rotation=90,Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromRGB(100,100,100))},swatch)
-    local popup=make("CanvasGroup",{Visible=false,Size=UDim2.fromOffset(0,260),
+
+    -- Reference dimensions are logical pixels; the screenshot shows this at 2x.
+    local popupWidth,popupHeight=224,256
+    local popup=make("CanvasGroup",{Name="NocturneColorbox",Visible=false,Size=UDim2.fromOffset(popupWidth,popupHeight),
         BackgroundColor3=C.Field,BorderSizePixel=0,ZIndex=80,GroupTransparency=1,ClipsDescendants=true},win.Root)
-    stroke(popup,Color3.fromRGB(70,70,70))
-    label(popup,opts.Text or "color",{Size=UDim2.new(1,0,0,20),TextXAlignment=Enum.TextXAlignment.Center,Bold=true})
-    local sv=button(popup,"",{Position=UDim2.fromOffset(10,26),Size=UDim2.fromOffset(150,150),BackgroundColor3=Color3.new(1,1,1)})
+    local popupScale=make("UIScale",{Scale=1},popup)
+    stroke(popup,Color3.fromRGB(7,7,7))
+    local edge=frame(popup,{Position=UDim2.fromOffset(1,1),Size=UDim2.new(1,-2,1,-2),BackgroundTransparency=1})
+    stroke(edge,Color3.fromRGB(65,65,65))
+    frame(popup,{Position=UDim2.fromOffset(2,2),Size=UDim2.new(1,-4,0,14),BackgroundColor3=C.Panel})
+    label(popup,opts.Text or "color",{Position=UDim2.fromOffset(2,1),Size=UDim2.new(1,-4,0,14),
+        TextXAlignment=Enum.TextXAlignment.Center,TextColor3=C.Muted})
+    local headerLine=frame(popup,{Position=UDim2.fromOffset(2,16),Size=UDim2.new(1,-4,0,1)})
+    win:_accent(headerLine,"BackgroundColor3")
+
+    local sv=button(popup,"",{Name="SaturationValue",Position=UDim2.fromOffset(10,26),Size=UDim2.fromOffset(150,150),BackgroundColor3=Color3.new(1,1,1)})
+    stroke(sv)
     local horizontal=make("UIGradient",{},sv)
     local shade=frame(sv,{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),Active=false,ZIndex=2})
     make("UIGradient",{Rotation=90,Transparency=NumberSequence.new(1,0)},shade)
-    local cursor=frame(sv,{Size=UDim2.fromOffset(4,4),AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=Color3.new(1,1,1),ZIndex=4,Active=false})
+    local cursor=frame(sv,{Size=UDim2.fromOffset(3,3),AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=Color3.new(1,1,1),ZIndex=4,Active=false})
     stroke(cursor,Color3.new(0,0,0))
-    local hue=button(popup,"",{Position=UDim2.fromOffset(168,26),Size=UDim2.fromOffset(14,150),BackgroundColor3=Color3.new(1,1,1)})
+    local hue=button(popup,"",{Name="Hue",Position=UDim2.fromOffset(168,26),Size=UDim2.fromOffset(14,150),BackgroundColor3=Color3.new(1,1,1)})
     local stops={}
     for i=0,6 do table.insert(stops,ColorSequenceKeypoint.new(i/6,Color3.fromHSV(i/6,1,1))) end
-    local hueGradient=make("UIGradient",{Rotation=90,Color=ColorSequence.new(stops)},hue)
-    stroke(hue,Color3.fromRGB(65,65,65))
-    local hueMark=frame(hue,{Size=UDim2.new(1,2,0,2),Position=UDim2.fromOffset(-1,0),BackgroundColor3=Color3.new(1,1,1),ZIndex=3})
+    make("UIGradient",{Rotation=90,Color=ColorSequence.new(stops)},hue)
+    stroke(hue)
+    local hueMark=frame(hue,{Size=UDim2.new(1,2,0,1),Position=UDim2.fromOffset(-1,0),BackgroundColor3=C.Text,ZIndex=3})
     stroke(hueMark,Color3.new(0,0,0))
-    local alpha=button(popup,"",{Position=UDim2.fromOffset(10,184),Size=UDim2.fromOffset(150,14)})
-    for y=0,1 do for x=0,24 do
-        frame(alpha,{Position=UDim2.fromOffset(x*6,y*7),Size=UDim2.fromOffset(6,7),BackgroundColor3=(x+y)%2==0 and Color3.fromRGB(150,150,150) or Color3.fromRGB(95,95,95)})
-    end end
-    stroke(alpha,Color3.fromRGB(65,65,65))
+
+    local function checker(parent,width,height)
+        for y=0,math.ceil(height/7)-1 do for x=0,math.ceil(width/7)-1 do
+            frame(parent,{Position=UDim2.fromOffset(x*7,y*7),
+                Size=UDim2.fromOffset(math.min(7,width-x*7),math.min(7,height-y*7)),
+                BackgroundColor3=(x+y)%2==0 and Color3.fromRGB(145,145,145) or Color3.fromRGB(90,90,90)})
+        end end
+    end
+    local alpha=button(popup,"",{Name="Alpha",Position=UDim2.fromOffset(10,184),Size=UDim2.fromOffset(150,14)})
+    checker(alpha,150,14)
+    stroke(alpha)
     local alphaColor=frame(alpha,{Size=UDim2.fromScale(1,1),ZIndex=2})
     make("UIGradient",{Transparency=NumberSequence.new(1,0)},alphaColor)
-    local alphaMark=frame(alpha,{Size=UDim2.fromOffset(2,14),BackgroundColor3=C.Text,ZIndex=3})
-    local preview=frame(popup,{Position=UDim2.fromOffset(168,184),Size=UDim2.fromOffset(46,14)})
-    local hex=make("TextBox",{Position=UDim2.fromOffset(10,206),Size=UDim2.fromOffset(204,20),BackgroundColor3=C.Field,BorderSizePixel=0,
-        Text="",TextColor3=C.Text,ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Left},popup)
-    padding(hex,4) stroke(hex)
-    local save=button(popup,"save to gallery",{Position=UDim2.fromOffset(10,234),Size=UDim2.fromOffset(204,18),TextColor3=C.Muted})
+    local alphaMark=frame(alpha,{Size=UDim2.fromOffset(1,14),BackgroundColor3=C.Text,ZIndex=3})
+    local previewBase=frame(popup,{Position=UDim2.fromOffset(168,184),Size=UDim2.fromOffset(46,14)})
+    checker(previewBase,46,14)
+    stroke(previewBase)
+    local preview=frame(previewBase,{Size=UDim2.fromScale(1,1),ZIndex=2})
+
+    local inputFrame=frame(popup,{Position=UDim2.fromOffset(10,206),Size=UDim2.fromOffset(204,18),BackgroundColor3=C.Field})
+    local inputEdge=stroke(inputFrame)
+    local colorInput=make("TextBox",{Name="ColorInput",Position=UDim2.fromOffset(5,0),Size=UDim2.new(1,-29,1,0),
+        BackgroundTransparency=1,BorderSizePixel=0,Text="",TextSize=11,TextColor3=C.Text,
+        ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Left},inputFrame)
+    local formatButton=button(inputFrame,"Aa",{Position=UDim2.new(1,-24,0,0),Size=UDim2.fromOffset(24,18),
+        BackgroundTransparency=1,TextColor3=C.Muted,ZIndex=3})
+    local save=button(popup,"save to gallery",{Position=UDim2.fromOffset(10,228),Size=UDim2.fromOffset(204,18),TextColor3=C.Muted})
     stroke(save)
     local control={Kind="ColorPicker",Value=Color3.new(1,1,1),Alpha=math.clamp(opts.Alpha or 1,0,1),Frame=row}
     local h,s,v=0,0,1
-    local rgba=false
-    local formatButton=button(popup,"Aa",{Position=UDim2.fromOffset(190,206),Size=UDim2.fromOffset(24,20),TextColor3=C.Muted,ZIndex=3})
-    hex.Size=UDim2.fromOffset(180,20)
+    local rgba=opts.Format~="Hex"
     local function paint()
         local color=control.Value
         swatch.BackgroundColor3=color preview.BackgroundColor3=color alphaColor.BackgroundColor3=color
         swatch.BackgroundTransparency=1-control.Alpha preview.BackgroundTransparency=1-control.Alpha
         horizontal.Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromHSV(h,1,1))
-        sv.BackgroundColor3=Color3.new(1,1,1)
         cursor.Position=UDim2.fromScale(s,1-v)
         hueMark.Position=UDim2.new(0,-1,h,-1)
         alphaMark.Position=UDim2.new(control.Alpha,-1,0,0)
-        hex.Text=rgba and string.format("%d, %d, %d, %d",math.floor(color.R*255+0.5),math.floor(color.G*255+0.5),math.floor(color.B*255+0.5),math.floor(control.Alpha*255+0.5)) or ("#"..color:ToHex()..string.format("%02X",math.floor(control.Alpha*255+0.5)))
+        inputEdge.Color=C.Border
+        colorInput.Text=rgba and string.format("%d, %d, %d, %d",math.floor(color.R*255+0.5),math.floor(color.G*255+0.5),
+            math.floor(color.B*255+0.5),math.floor(control.Alpha*255+0.5))
+            or ("#"..color:ToHex()..string.format("%02X",math.floor(control.Alpha*255+0.5)))
     end
     win:_connect(formatButton.Activated,function() rgba=not rgba paint() end)
     function control:Validate(value) return typeof(value)=="Color3" end
@@ -1245,66 +1292,88 @@ function Section:AddColorPicker(opts)
     local function update()
         local color=Color3.fromHSV(h,s,v)
         local changed=control.Value~=color control.Value=color paint()
-        if changed then win:_call(opts.Callback,color,control.Alpha) end
+        if changed then control.Notify() end
     end
-    win:_connect(sv.InputBegan,function(input) win:_dragStart(input,function(p)
-        s=math.clamp((p.X-sv.AbsolutePosition.X)/sv.AbsoluteSize.X,0,1)
-        v=1-math.clamp((p.Y-sv.AbsolutePosition.Y)/sv.AbsoluteSize.Y,0,1) update()
+    local function drag(input,updateDrag)
+        if opts.IsEnabled and not opts.IsEnabled() then return end
+        win:_dragStart(input,updateDrag)
+        if primary(input) and win.Drag then win.Drag.Owner=popup end
+    end
+    win:_connect(sv.InputBegan,function(input) drag(input,function(p)
+        s=math.clamp((p.X-sv.AbsolutePosition.X)/math.max(1,sv.AbsoluteSize.X),0,1)
+        v=1-math.clamp((p.Y-sv.AbsolutePosition.Y)/math.max(1,sv.AbsoluteSize.Y),0,1) update()
     end) end)
-    win:_connect(hue.InputBegan,function(input) win:_dragStart(input,function(p)
-        h=math.clamp((p.Y-hue.AbsolutePosition.Y)/hue.AbsoluteSize.Y,0,1) update()
+    win:_connect(hue.InputBegan,function(input) drag(input,function(p)
+        h=math.clamp((p.Y-hue.AbsolutePosition.Y)/math.max(1,hue.AbsoluteSize.Y),0,1) update()
     end) end)
-    win:_connect(alpha.InputBegan,function(input) win:_dragStart(input,function(p)
-        control:SetAlpha((p.X-alpha.AbsolutePosition.X)/alpha.AbsoluteSize.X)
+    win:_connect(alpha.InputBegan,function(input) drag(input,function(p)
+        control:SetAlpha((p.X-alpha.AbsolutePosition.X)/math.max(1,alpha.AbsoluteSize.X))
     end) end)
-    win:_connect(hex.FocusLost,function()
-        local text=hex.Text:gsub("#",""):gsub("%s","")
+    win:_connect(colorInput.FocusLost,function()
+        local text=colorInput.Text:gsub("^#",""):gsub("%s","")
         local r,g,b,a=text:match("^(%d+),(%d+),(%d+),(%d+)$")
+        local color,newAlpha
         if r then
             r,g,b,a=tonumber(r),tonumber(g),tonumber(b),tonumber(a)
             if r<=255 and g<=255 and b<=255 and a<=255 then
-                control.Alpha=a/255 control:Set(Color3.fromRGB(r,g,b),true)
-                win:_call(opts.Callback,control.Value,control.Alpha) return
+                color,newAlpha=Color3.fromRGB(r,g,b),a/255
             end
+        elseif (#text==6 or #text==8) and text:match("^%x+$") then
+            color=Color3.fromRGB(tonumber(text:sub(1,2),16),tonumber(text:sub(3,4),16),tonumber(text:sub(5,6),16))
+            newAlpha=#text==8 and tonumber(text:sub(7,8),16)/255 or control.Alpha
         end
-        if (#text==6 or #text==8) and text:match("^%x+$") then
-            control.Alpha=#text==8 and tonumber(text:sub(7,8),16)/255 or control.Alpha
-            control:Set(Color3.fromRGB(tonumber(text:sub(1,2),16),tonumber(text:sub(3,4),16),tonumber(text:sub(5,6),16)),true)
-            win:_call(opts.Callback,control.Value,control.Alpha)
-        else paint() end
+        if color then
+            local changed=control.Value~=color or control.Alpha~=newAlpha
+            control.Alpha=newAlpha control:Set(color,true)
+            if changed then control.Notify() end
+        else
+            paint()
+            inputEdge.Color=C.Risk
+        end
     end)
+
     local gallery={}
-    win.Gallery=win.Gallery or {}
-    local initial={}
+    local function refreshGallery()
+        for i,entry in ipairs(gallery) do
+            local saved=win.Gallery[i]
+            entry.Button.BackgroundColor3=saved and saved.Color or C.Field
+            entry.Button.BackgroundTransparency=saved and 1-saved.Alpha or 0
+            entry.Gradient.Enabled=saved~=nil
+        end
+    end
     for i=1,10 do
-        local item=button(popup,"",{Position=UDim2.fromOffset(190,26+(i-1)*15),Size=UDim2.fromOffset(24,11),BackgroundColor3=initial[i] or C.Field})
+        local item=button(popup,"",{Name="Gallery"..i,Position=UDim2.fromOffset(190,26+(i-1)*15),
+            Size=UDim2.fromOffset(22,11),BackgroundColor3=C.Field})
         stroke(item)
-        gallery[i]={Button=item,Color=initial[i],Alpha=1}
+        local gradient=make("UIGradient",{Enabled=false,Rotation=90,
+            Color=ColorSequence.new(Color3.new(1,1,1),Color3.fromRGB(100,100,100))},item)
+        gallery[i]={Button=item,Gradient=gradient}
         win:_connect(item.Activated,function()
-            local entry=win.Gallery[i] or gallery[i]
-            if entry.Color then control.Alpha=entry.Alpha control:Set(entry.Color,true) win:_call(opts.Callback,control.Value,control.Alpha) end
+            local entry=win.Gallery[i]
+            if entry then
+                local changed=control.Value~=entry.Color or control.Alpha~=entry.Alpha
+                control.Alpha=entry.Alpha control:Set(entry.Color,true)
+                if changed then control.Notify() end
+            end
         end)
     end
-    local nextSlot=1
     win:_connect(save.Activated,function()
-        local entry=gallery[nextSlot] entry.Color=control.Value entry.Alpha=control.Alpha
-        entry.Button.BackgroundColor3=entry.Color
-        win.Gallery[nextSlot]={Color=entry.Color,Alpha=entry.Alpha}
-        nextSlot=nextSlot%10+1
+        win.Gallery[win.GalleryNext]={Color=control.Value,Alpha=control.Alpha}
+        win.GalleryNext=win.GalleryNext%10+1
+        refreshGallery()
     end)
     local function inside(point,obj)
         local p,z=obj.AbsolutePosition,obj.AbsoluteSize
         return point.X>=p.X and point.Y>=p.Y and point.X<=p.X+z.X and point.Y<=p.Y+z.Y
     end
     local function closePopup(instant)
+        if win.Drag and win.Drag.Owner==popup then win.Drag=nil end
         if not popup.Visible then return end
         win:_cancelTween(popup)
         if instant then
-            popup.Visible=false
-            popup.Size=UDim2.fromOffset(0,260)
-            popup.GroupTransparency=1
+            popup.Visible=false popup.GroupTransparency=1
         else
-            win:_tween(popup,0.08,{Size=UDim2.fromOffset(0,260),GroupTransparency=1},function()
+            win:_tween(popup,0.08,{GroupTransparency=1},function()
                 if win.Picker~=popup then popup.Visible=false end
             end)
         end
@@ -1316,20 +1385,24 @@ function Section:AddColorPicker(opts)
         end
     end)
     win:_connect(hit.Activated,function()
+        if opts.IsEnabled and not opts.IsEnabled() then return end
         local show=win.Picker~=popup or not popup.Visible
         if not show then win:_closePicker(false) return end
         win:_closePicker(true)
+        win.Tooltip.Visible=false
         win.Picker=popup
         local p=hit.AbsolutePosition-win.Root.AbsolutePosition local size=win.Root.AbsoluteSize
-        popup.Position=UDim2.fromOffset(math.clamp(p.X+hit.AbsoluteSize.X+8,0,math.max(0,size.X-224)),math.clamp(p.Y,0,math.max(0,size.Y-260)))
-        for i,entry in ipairs(gallery) do
-            local saved=win.Gallery[i]
-            entry.Button.BackgroundColor3=saved and saved.Color or C.Field
-        end
-        popup.Size=UDim2.fromOffset(0,260)
+        local scale=math.max(0.1,math.min(win.Scale.Scale,(size.X-8)/popupWidth,(size.Y-8)/popupHeight))
+        popupScale.Scale=scale
+        local width,height=popupWidth*scale,popupHeight*scale
+        local x=p.X+hit.AbsoluteSize.X+6
+        if x+width>size.X-4 then x=p.X-width-6 end
+        popup.Position=UDim2.fromOffset(math.clamp(x,0,math.max(0,size.X-width)),math.clamp(p.Y,0,math.max(0,size.Y-height)))
+        refreshGallery()
+        paint()
         popup.GroupTransparency=1
         popup.Visible=true
-        win:_tween(popup,0.1,{Size=UDim2.fromOffset(224,260),GroupTransparency=0})
+        win:_tween(popup,0.1,{GroupTransparency=0})
     end)
     control:Set(opts.Default or C.Accent,true)
     return win:_register(control,opts)
@@ -1446,10 +1519,12 @@ function Tab:AddSubTab(name, icon)
     sub.Line.Visible=false
     sub.Caption.TextColor3=C.Muted
     for i=1,2 do
-        local col=make("ScrollingFrame",{Position=UDim2.new((i-1)*0.5,(i-1)*6,0,0),Size=UDim2.new(0.5,-6,1,0),
+        local col=make("ScrollingFrame",{Position=UDim2.new((i-1)*0.5,0,0,0),Size=UDim2.new(0.5,0,1,0),
             BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,
             ScrollBarThickness=2,ScrollBarImageColor3=C.Muted,ScrollingDirection=Enum.ScrollingDirection.Y},sub.Page)
-        padding(col,8) list(col,12) sub.Columns[i]=col
+        make("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,4),
+            PaddingTop=UDim.new(0,8),PaddingBottom=UDim.new(0,8)},col)
+        list(col,12) sub.Columns[i]=col
     end
     local owner=self
     function sub:Select()
